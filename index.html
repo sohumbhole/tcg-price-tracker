@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -55,7 +55,7 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        html, body { height: 100%; }
+        html { height: -webkit-fill-available; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -63,6 +63,11 @@
             color: var(--label);
             -webkit-font-smoothing: antialiased;
             overscroll-behavior-y: none;
+            min-height: 100vh;
+            min-height: 100dvh;
+            min-height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
         }
 
         /* faint aurora backdrop so it reads as an app, not a doc */
@@ -79,16 +84,20 @@
         }
 
         .screen { display: none; }
-        .screen.active { display: block; }
+        .screen.active {
+            display: block;
+            flex: 1 1 auto;
+            min-height: 0;
+            position: relative;
+        }
 
         .scroll {
-            height: 100vh;
-            height: 100dvh;
+            position: absolute;
+            inset: 0;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            position: relative;
             z-index: 1;
-            padding-bottom: calc(96px + env(safe-area-inset-bottom));
+            padding-bottom: 28px;
         }
 
         /* ---- Navigation bar ---- */
@@ -357,8 +366,7 @@
 
         /* ---- Tab bar ---- */
         .tabbar {
-            position: fixed;
-            left: 0; right: 0; bottom: 0;
+            flex: 0 0 auto;
             z-index: 60;
             display: flex;
             padding-bottom: env(safe-area-inset-bottom);
