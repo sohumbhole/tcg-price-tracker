@@ -2,756 +2,839 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TCG Tracker">
+    <meta name="theme-color" content="#0B1020">
+    <link rel="apple-touch-icon" href="icon.png">
     <title>Pokemon TCG Price Tracker</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --blue: #3B5BFF;
+            --blue-press: #2C46D6;
+            --gold: #FFCB05;
+            --green: #30D158;
+            --orange: #FF9F0A;
+            --red: #FF453A;
+            --sky: #0A84FF;
+
+            --bg: #EDEFF5;
+            --bg-elev: #F7F8FC;
+            --card: #FFFFFF;
+            --card-sub: #F2F3F8;
+            --label: #0B1020;
+            --label-2: rgba(60, 60, 67, 0.6);
+            --label-3: rgba(60, 60, 67, 0.3);
+            --separator: rgba(60, 60, 67, 0.14);
+            --nav-bg: rgba(247, 248, 252, 0.82);
+            --tab-bg: rgba(247, 248, 252, 0.86);
+            --fill: rgba(118, 118, 128, 0.12);
+            --shadow: 0 1px 2px rgba(11, 16, 32, 0.06), 0 8px 24px rgba(11, 16, 32, 0.06);
         }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --bg-elev: #0B0E17;
+                --card: #14181F;
+                --card-sub: #1C212B;
+                --label: #FFFFFF;
+                --label-2: rgba(235, 235, 245, 0.6);
+                --label-3: rgba(235, 235, 245, 0.3);
+                --separator: rgba(255, 255, 255, 0.1);
+                --nav-bg: rgba(16, 20, 28, 0.72);
+                --tab-bg: rgba(16, 20, 28, 0.8);
+                --fill: rgba(120, 120, 128, 0.24);
+                --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5);
+                --blue: #5A76FF;
+                --blue-press: #6E88FF;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body { height: 100%; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #fef3e2 0%, #f5e6d3 50%, #e8dcc8 100%);
-            min-height: 100vh;
-            color: #2c3e50;
-            padding-bottom: 70px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--label);
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: none;
         }
 
-        .header {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            color: white;
-            padding: 12px 16px;
-            font-size: 16px;
-            font-weight: 800;
+        /* faint aurora backdrop so it reads as an app, not a doc */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: -20% -20% auto -20%;
+            height: 55vh;
+            background:
+                radial-gradient(60% 60% at 20% 0%, rgba(59, 91, 255, 0.20), transparent 70%),
+                radial-gradient(50% 50% at 90% 10%, rgba(255, 203, 5, 0.14), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .scroll {
+            height: 100vh;
+            height: 100dvh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            z-index: 1;
+            padding-bottom: calc(96px + env(safe-area-inset-bottom));
+        }
+
+        /* ---- Navigation bar ---- */
+        .navbar {
             position: sticky;
             top: 0;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(255, 68, 68, 0.15);
+            z-index: 50;
+            padding-top: env(safe-area-inset-top);
+            background: transparent;
+            transition: background 0.25s ease, box-shadow 0.25s ease;
         }
-
-        .tab-container {
+        .navbar.scrolled {
+            background: var(--nav-bg);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            backdrop-filter: saturate(180%) blur(20px);
+            box-shadow: 0 0.5px 0 var(--separator);
+        }
+        .navbar-inner {
+            height: 44px;
             display: flex;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: white;
-            border-top: 2px solid #e8dcc8;
-            z-index: 99;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 14px 12px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 700;
-            color: #95a5a6;
-            border-top: 4px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .tab-btn.active {
-            border-top-color: #ff6b6b;
-            color: #ff6b6b;
-        }
-
-        .content {
-            display: none;
-            padding: 16px;
-            animation: slideUp 0.3s ease;
-        }
-
-        .content.active {
-            display: block;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 14px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-        }
-
-        .card h2 {
-            color: #ff6b6b;
-            font-size: 18px;
-            margin-bottom: 14px;
-        }
-
-        .input-group {
-            margin-bottom: 14px;
-        }
-
-        label {
-            display: block;
-            font-weight: 700;
-            margin-bottom: 8px;
-            font-size: 12px;
-            color: #2c3e50;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .select-wrapper {
+            align-items: center;
+            justify-content: center;
             position: relative;
         }
-
-        select {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid #e8dcc8;
-            border-radius: 12px;
-            font-size: 15px;
-            background: white;
-            color: #2c3e50;
-            appearance: none;
-            cursor: pointer;
+        .nav-small-title {
+            font-size: 17px;
             font-weight: 600;
-            padding-right: 40px;
+            letter-spacing: -0.2px;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
-
-        select:focus {
-            outline: none;
-            border-color: #ff6b6b;
-            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-        }
-
-        .select-wrapper::after {
-            content: '▼';
+        .navbar.scrolled .nav-small-title { opacity: 1; transform: translateY(0); }
+        .nav-back {
             position: absolute;
-            right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
-            color: #ff6b6b;
-            font-size: 11px;
-            font-weight: bold;
+            left: 8px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            color: var(--blue);
+            font-size: 17px;
+            font-weight: 400;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
         }
 
-        input {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid #e8dcc8;
-            border-radius: 12px;
+        .large-title {
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -0.7px;
+            padding: 4px 20px 2px;
+            line-height: 1.1;
+        }
+        .large-sub {
             font-size: 15px;
-            background: white;
-            color: #2c3e50;
+            color: var(--label-2);
+            padding: 2px 20px 12px;
+            font-weight: 500;
+        }
+
+        /* ---- Grouped list ---- */
+        .group-label {
+            font-size: 13px;
             font-weight: 600;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #ff6b6b;
-            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 15px;
-            margin-top: 14px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.25);
-            transition: all 0.2s ease;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        .back-btn {
-            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%) !important;
-            margin-bottom: 14px;
-            margin-top: 0 !important;
-        }
-
-        .result {
-            background: rgba(255, 107, 107, 0.08);
-            border-left: 5px solid #ff6b6b;
-            padding: 14px;
-            margin-top: 14px;
-            border-radius: 12px;
-        }
-
-        .score {
-            display: inline-block;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 12px;
-            margin-top: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
+            color: var(--label-2);
+            padding: 18px 20px 8px;
         }
-
-        .score.buy {
-            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-            color: white;
-        }
-
-        .score.consider {
-            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-            color: white;
-        }
-
-        .score.skip {
-            background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
-            color: white;
-        }
-
-        .score.wait {
-            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-            color: white;
-        }
-
-        .set-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .set-card {
-            border-radius: 16px;
+        .group {
+            margin: 0 16px 8px;
+            background: var(--card);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
             overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-            border: none;
         }
-
-        .set-card:active {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-        }
-
-        .set-header {
-            padding: 18px;
-            color: white;
-            font-weight: 700;
-            font-size: 20px;
+        .row {
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 14px 16px;
+            min-height: 52px;
+            position: relative;
+            background: var(--card);
         }
-
-        .set-emoji {
-            font-size: 32px;
+        .row + .row::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 16px; right: 0;
+            height: 0.5px;
+            background: var(--separator);
         }
+        .row.tappable { cursor: pointer; transition: background 0.12s ease; }
+        .row.tappable:active { background: var(--card-sub); }
+        .row-title { font-size: 17px; font-weight: 500; flex: 1; letter-spacing: -0.2px; }
+        .row-value { font-size: 17px; color: var(--label-2); display: flex; align-items: center; gap: 6px; }
+        .chevron { color: var(--label-3); flex-shrink: 0; }
 
-        .set-info {
-            padding: 12px 18px;
-            font-size: 13px;
-            color: #7f8c8d;
-            background: white;
-        }
-
-        .pitch-black {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-        }
-
-        .pitch-black .set-info {
-            border-top: 3px solid #ff6b6b;
-        }
-
-        .chaos-rising {
-            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
-        }
-
-        .chaos-rising .set-info {
-            border-top: 3px solid #9c27b0;
-        }
-
-        .perfect-order {
-            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-        }
-
-        .perfect-order .set-info {
-            border-top: 3px solid #2196f3;
-        }
-
-        .product-grid {
-            display: grid;
-            gap: 12px;
-        }
-
-        .product-item {
-            background: white;
-            border-radius: 14px;
-            padding: 16px;
-            border: 2px solid #e8dcc8;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .product-item:active {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            border-color: #ff6b6b;
-        }
-
-        .product-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-
-        .product-name {
-            font-weight: 700;
-            color: #2c3e50;
-            font-size: 14px;
-            margin-bottom: 6px;
-        }
-
-        .product-info {
-            font-size: 12px;
-            color: #7f8c8d;
-            line-height: 1.4;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 1000;
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: flex-end;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 20px 20px 0 0;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding: 24px;
-            animation: slideUp 0.3s ease;
-        }
-
-        .modal-content h2 {
-            color: #ff6b6b;
-            margin-bottom: 16px;
-            font-size: 20px;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 14px;
-        }
-
-        .detail-label {
-            font-weight: 700;
-            color: #7f8c8d;
-            font-size: 12px;
-        }
-
-        .detail-value {
-            font-weight: 700;
-            color: #2c3e50;
+        /* native selects styled as iOS rows */
+        .row select {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            background: transparent;
+            font: inherit;
+            font-size: 17px;
+            color: var(--label);
             text-align: right;
+            direction: rtl;
+            padding: 0;
+            flex: 1;
+            cursor: pointer;
         }
-
-        .modal-close {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid #e8dcc8;
+        .row select:focus { outline: none; }
+        .row .price-field {
+            border: none;
+            background: transparent;
+            font: inherit;
+            font-size: 17px;
+            color: var(--label);
+            text-align: right;
+            flex: 1;
+            min-width: 0;
         }
+        .row .price-field:focus { outline: none; }
+        .row .dollar { color: var(--label-2); font-size: 17px; }
 
-        .modal-close button {
-            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
-        }
-
-        .reference-table {
+        /* ---- Primary button ---- */
+        .cta-wrap { padding: 20px 16px 4px; }
+        .cta {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-top: 12px;
-        }
-
-        .reference-table th,
-        .reference-table td {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #e8dcc8;
-        }
-
-        .reference-table th {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            color: white;
+            padding: 16px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-size: 17px;
             font-weight: 700;
+            letter-spacing: -0.2px;
+            cursor: pointer;
+            transition: transform 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+            box-shadow: 0 8px 20px rgba(59, 91, 255, 0.28);
         }
+        .cta:active { transform: scale(0.975); background: var(--blue-press); }
 
-        .warning {
-            background: rgba(255, 193, 7, 0.12);
-            border-left: 5px solid #ffc107;
-            padding: 12px;
-            margin: 12px 0;
-            border-radius: 10px;
-            font-size: 13px;
-            color: #2c3e50;
+        /* ---- Result verdict card ---- */
+        .verdict {
+            margin: 16px;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(10px);
+            animation: pop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
         }
+        @keyframes pop { to { opacity: 1; transform: translateY(0); } }
+        .verdict-head {
+            padding: 22px 20px 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .verdict-badge {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.22);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px;
+            flex-shrink: 0;
+        }
+        .verdict-verb { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; }
+        .verdict-note { font-size: 14px; opacity: 0.9; font-weight: 500; margin-top: 2px; }
+        .v-buy { background: linear-gradient(135deg, #34D058, #1FA845); }
+        .v-consider { background: linear-gradient(135deg, #FFB020, #F58600); }
+        .v-wait { background: linear-gradient(135deg, #35A0FF, #0A6CFF); }
+        .v-skip { background: linear-gradient(135deg, #FF6155, #E5342A); }
+        .verdict-body { background: var(--card); padding: 6px 20px 8px; }
+        .vrow { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; font-size: 15px; }
+        .vrow + .vrow { border-top: 0.5px solid var(--separator); }
+        .vrow .k { color: var(--label-2); font-weight: 500; }
+        .vrow .v { font-weight: 700; letter-spacing: -0.2px; }
+
+        /* ---- Set cards ---- */
+        .set-list { padding: 4px 16px 0; display: grid; gap: 14px; }
+        .set-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 22px;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 26px rgba(11, 16, 32, 0.18);
+            transition: transform 0.14s ease;
+        }
+        .set-card:active { transform: scale(0.98); }
+        .set-card .glow {
+            position: absolute; inset: 0;
+            background: radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,0.22), transparent 60%);
+            pointer-events: none;
+        }
+        .set-emblem {
+            width: 62px; height: 62px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
+        }
+        .set-meta { flex: 1; z-index: 1; }
+        .set-name { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+        .set-date { font-size: 13px; font-weight: 600; opacity: 0.85; margin-top: 2px; }
+        .set-count { font-size: 12px; font-weight: 600; opacity: 0.7; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .set-card .chev-w { z-index: 1; opacity: 0.8; }
+
+        .g-pitch-black { background: linear-gradient(140deg, #2A2E3A 0%, #0C0E14 100%); }
+        .g-chaos-rising { background: linear-gradient(140deg, #7A2BD1 0%, #3A1076 100%); }
+        .g-perfect-order { background: linear-gradient(140deg, #2E86FF 0%, #0B49C4 100%); }
+
+        /* ---- Product grid ---- */
+        .prod-grid { padding: 6px 16px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .prod {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 18px 14px 16px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: transform 0.14s ease;
+        }
+        .prod:active { transform: scale(0.97); }
+        .prod-art {
+            height: 84px;
+            display: flex; align-items: flex-end; justify-content: center;
+            margin-bottom: 12px;
+        }
+        .prod-name { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+        .prod-sub { font-size: 12px; color: var(--label-2); margin-top: 3px; font-weight: 500; }
+        .prod-pill {
+            display: inline-block;
+            margin-top: 9px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 9px;
+            border-radius: 20px;
+            background: var(--fill);
+            color: var(--label-2);
+        }
+        .prod-pill.hot { background: rgba(255, 69, 58, 0.14); color: var(--red); }
+
+        /* ---- Guide ---- */
+        .badge-icon {
+            width: 29px; height: 29px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; color: #fff;
+        }
+        .b-green { background: var(--green); }
+        .b-red { background: var(--red); }
+        .b-blue { background: var(--blue); }
+        .b-gold { background: var(--gold); color: #0B1020; }
+        .row-desc { font-size: 13px; color: var(--label-2); margin-top: 2px; }
+        .row-stack { flex: 1; }
+        .mono-val { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+        /* ---- Tab bar ---- */
+        .tabbar {
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            z-index: 60;
+            display: flex;
+            padding-bottom: env(safe-area-inset-bottom);
+            background: var(--tab-bg);
+            -webkit-backdrop-filter: saturate(180%) blur(22px);
+            backdrop-filter: saturate(180%) blur(22px);
+            box-shadow: 0 -0.5px 0 var(--separator);
+        }
+        .tab {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 8px 0 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            color: var(--label-3);
+            cursor: pointer;
+            transition: color 0.15s ease;
+        }
+        .tab .tlabel { font-size: 10px; font-weight: 600; letter-spacing: 0.1px; }
+        .tab.active { color: var(--blue); }
+        .tab svg { display: block; }
+
+        /* ---- Detail sheet ---- */
+        .sheet-scrim {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(0,0,0,0.45);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            display: flex; align-items: flex-end;
+        }
+        .sheet-scrim.open { opacity: 1; pointer-events: auto; }
+        .sheet {
+            width: 100%;
+            background: var(--bg-elev);
+            border-radius: 22px 22px 0 0;
+            padding: 10px 16px calc(24px + env(safe-area-inset-bottom));
+            transform: translateY(100%);
+            transition: transform 0.34s cubic-bezier(0.22, 0.9, 0.28, 1);
+            max-height: 88vh;
+            overflow-y: auto;
+        }
+        .sheet-scrim.open .sheet { transform: translateY(0); }
+        .grabber { width: 38px; height: 5px; border-radius: 3px; background: var(--label-3); margin: 4px auto 14px; }
+        .sheet-hero {
+            display: flex; align-items: center; gap: 16px;
+            padding: 4px 4px 18px;
+        }
+        .sheet-art {
+            width: 74px; height: 74px; border-radius: 18px;
+            background: var(--card);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow);
+            flex-shrink: 0;
+        }
+        .sheet-title { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+        .sheet-set { font-size: 14px; color: var(--label-2); font-weight: 600; margin-top: 2px; }
+        .sheet-close {
+            width: 100%; margin-top: 14px; padding: 15px;
+            border: none; border-radius: 16px;
+            background: var(--fill); color: var(--blue);
+            font-size: 17px; font-weight: 600; cursor: pointer;
+        }
+        .sheet-close:active { opacity: 0.6; }
     </style>
 </head>
 <body>
-    <div class="header">TCG Price Tracker</div>
 
-    <div id="tab1" class="content active">
-        <div class="card">
-            <h2>Analyze Price</h2>
+    <!-- ===================== PRICE ===================== -->
+    <section id="screen-price" class="screen active">
+        <div class="scroll" data-title="Price Check">
+            <div class="navbar"><div class="navbar-inner"><span class="nav-small-title">Price Check</span></div></div>
+            <h1 class="large-title">Price Check</h1>
+            <p class="large-sub">Scan a price, get the verdict.</p>
 
-            <div class="input-group">
-                <label>Set Name</label>
-                <div class="select-wrapper">
+            <div class="group-label">The Deal</div>
+            <div class="group">
+                <label class="row" for="setSelect">
+                    <span class="row-title">Set</span>
                     <select id="setSelect">
-                        <option value="">Select a set</option>
-                        <option value="pitch-black">Pitch Black (July 2026)</option>
-                        <option value="chaos-rising">Chaos Rising (May 2026)</option>
-                        <option value="perfect-order">Perfect Order (March 2026)</option>
+                        <option value="">Choose</option>
+                        <option value="pitch-black">Pitch Black</option>
+                        <option value="chaos-rising">Chaos Rising</option>
+                        <option value="perfect-order">Perfect Order</option>
                     </select>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label>Product Type</label>
-                <div class="select-wrapper">
+                </label>
+                <label class="row" for="productType">
+                    <span class="row-title">Product</span>
                     <select id="productType">
-                        <option value="">Select product</option>
-                        <option value="booster-bundle">Booster Bundle (6 packs)</option>
-                        <option value="etb">Elite Trainer Box (9 packs)</option>
+                        <option value="">Choose</option>
+                        <option value="booster-bundle">Booster Bundle</option>
+                        <option value="etb">Elite Trainer Box</option>
                         <option value="blister-2">2-Pack Blister</option>
                         <option value="blister-3">3-Pack Blister</option>
-                        <option value="booster-box">Booster Box (36 packs)</option>
+                        <option value="booster-box">Booster Box</option>
                         <option value="single-pack">Single Pack</option>
                     </select>
-                </div>
+                </label>
+                <label class="row" for="priceFound">
+                    <span class="row-title">Price</span>
+                    <span class="dollar">$</span>
+                    <input class="price-field" type="number" id="priceFound" inputmode="decimal" placeholder="0.00" step="0.01">
+                </label>
             </div>
 
-            <div class="input-group">
-                <label>Price Found ($)</label>
-                <input type="number" id="priceFound" placeholder="35.99" step="0.01">
+            <div class="cta-wrap">
+                <button class="cta" onclick="analyzePrice()">Check Price</button>
             </div>
-
-            <button onclick="analyzePrice()">Check Price</button>
 
             <div id="priceResult"></div>
         </div>
-    </div>
+    </section>
 
-    <div id="tab2" class="content">
-        <div id="setView"></div>
-        <div id="productView" style="display: none;"></div>
-    </div>
-
-    <div id="tab3" class="content">
-        <div class="card">
-            <h2>MSRP Guide</h2>
-            <table class="reference-table">
-                <tr>
-                    <th>Product</th>
-                    <th>MSRP</th>
-                    <th>$/Pack</th>
-                </tr>
-                <tr>
-                    <td>Booster Bundle</td>
-                    <td>$27</td>
-                    <td>$4.50</td>
-                </tr>
-                <tr>
-                    <td>Booster Box</td>
-                    <td>$162</td>
-                    <td>$4.50</td>
-                </tr>
-                <tr>
-                    <td>ETB</td>
-                    <td>$50</td>
-                    <td>$5.56</td>
-                </tr>
-                <tr>
-                    <td>2-Pack Blister</td>
-                    <td>$9.99</td>
-                    <td>$5.00</td>
-                </tr>
-                <tr>
-                    <td>3-Pack Blister</td>
-                    <td>$13.99</td>
-                    <td>$4.66</td>
-                </tr>
-            </table>
+    <!-- ===================== SETS ===================== -->
+    <section id="screen-sets" class="screen">
+        <div class="scroll" data-title="Sets">
+            <div class="navbar"><div class="navbar-inner">
+                <button class="nav-back" id="setsBack" onclick="backToSets()" style="display:none">
+                    <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2 2 10l8 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Sets
+                </button>
+                <span class="nav-small-title" id="setsNavTitle">Sets</span>
+            </div></div>
+            <h1 class="large-title" id="setsLarge">Sets</h1>
+            <p class="large-sub" id="setsSub">Three sets tracked.</p>
+            <div id="setView" class="set-list"></div>
+            <div id="productView" class="prod-grid" style="display:none"></div>
         </div>
+    </section>
 
-        <div class="card">
-            <h2>What to Buy</h2>
-            <div class="warning">✓ Booster Bundles ($4.50/pack)</div>
-            <div class="warning">✓ 3-Pack Blister ($4.66/pack)</div>
-            <div class="warning">✓ Booster Box at retail</div>
-            <div class="warning" style="background: rgba(244, 67, 54, 0.12); border-left-color: #f44336;">✗ SKIP Tins</div>
+    <!-- ===================== GUIDE ===================== -->
+    <section id="screen-guide" class="screen">
+        <div class="scroll" data-title="Guide">
+            <div class="navbar"><div class="navbar-inner"><span class="nav-small-title">Guide</span></div></div>
+            <h1 class="large-title">Guide</h1>
+            <p class="large-sub">MSRP and what's worth buying.</p>
+
+            <div class="group-label">MSRP &middot; cost per pack</div>
+            <div class="group" id="msrpGroup"></div>
+
+            <div class="group-label">What to buy</div>
+            <div class="group" id="buyGroup"></div>
         </div>
-    </div>
+    </section>
 
-    <div id="productModal" class="modal">
-        <div class="modal-content">
-            <div id="modalDetails"></div>
-            <div class="modal-close">
-                <button onclick="closeModal()">Close</button>
-            </div>
+    <!-- ===================== TAB BAR ===================== -->
+    <nav class="tabbar">
+        <button class="tab active" data-screen="price" onclick="switchTab('price', this)">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <path d="M4 17.5 10 11l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 6h-4M22 6v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="tlabel">Price</span>
+        </button>
+        <button class="tab" data-screen="sets" onclick="switchTab('sets', this)">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <rect x="4" y="8" width="18" height="13" rx="3.2" stroke="currentColor" stroke-width="2.1"/>
+                <path d="M7 8V6.4A2.4 2.4 0 0 1 9.4 4h7.2A2.4 2.4 0 0 1 19 6.4V8" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+            </svg>
+            <span class="tlabel">Sets</span>
+        </button>
+        <button class="tab" data-screen="guide" onclick="switchTab('guide', this)">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <path d="M6 5.5h11a2.5 2.5 0 0 1 2.5 2.5v12.5a0 0 0 0 1 0 0H8.5A2.5 2.5 0 0 1 6 18V5.5Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/>
+                <path d="M9.5 10h6M9.5 14h4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+            </svg>
+            <span class="tlabel">Guide</span>
+        </button>
+    </nav>
+
+    <!-- ===================== DETAIL SHEET ===================== -->
+    <div class="sheet-scrim" id="sheetScrim" onclick="if(event.target===this)closeSheet()">
+        <div class="sheet" id="sheet">
+            <div class="grabber"></div>
+            <div id="sheetContent"></div>
+            <button class="sheet-close" onclick="closeSheet()">Done</button>
         </div>
-    </div>
-
-    <div class="tab-container">
-        <button class="tab-btn active" onclick="switchTab(1)">💰 Price</button>
-        <button class="tab-btn" onclick="switchTab(2)">📚 Sets</button>
-        <button class="tab-btn" onclick="switchTab(3)">📋 Guide</button>
     </div>
 
     <script>
+        /* ---------- data (unchanged values) ---------- */
         const setData = {
             'pitch-black': {
-                name: 'Pitch Black',
-                released: 'July 17, 2026',
-                emoji: '⚫',
+                name: 'Pitch Black', released: 'July 17, 2026', grad: 'g-pitch-black',
                 products: {
-                    'booster-bundle': { name: 'Booster Bundle', msrp: 27, packs: 6, current: 38.72, emoji: '📦' },
-                    'etb': { name: 'Elite Trainer Box', msrp: 50, packs: 9, current: 69.91, emoji: '🎁' },
-                    'blister-2': { name: '2-Pack Blister', msrp: 9.99, packs: 2, current: 11, emoji: '💳' },
-                    'blister-3': { name: '3-Pack Blister', msrp: 13.99, packs: 3, current: 16, emoji: '💳' }
+                    'booster-bundle': { name: 'Booster Bundle', msrp: 27, packs: 6, current: 38.72, art: 'bundle' },
+                    'etb': { name: 'Elite Trainer Box', msrp: 50, packs: 9, current: 69.91, art: 'etb' },
+                    'blister-2': { name: '2-Pack Blister', msrp: 9.99, packs: 2, current: 11, art: 'blister' },
+                    'blister-3': { name: '3-Pack Blister', msrp: 13.99, packs: 3, current: 16, art: 'blister' }
                 }
             },
             'chaos-rising': {
-                name: 'Chaos Rising',
-                released: 'May 22, 2026',
-                emoji: '💜',
+                name: 'Chaos Rising', released: 'May 22, 2026', grad: 'g-chaos-rising',
                 products: {
-                    'booster-bundle': { name: 'Booster Bundle', msrp: 27, packs: 6, current: 37.16, emoji: '📦' },
-                    'etb': { name: 'Elite Trainer Box', msrp: 50, packs: 9, current: 71.66, emoji: '🎁' },
-                    'blister-2': { name: '2-Pack Blister', msrp: 9.99, packs: 2, current: 12, emoji: '💳' },
-                    'blister-3': { name: '3-Pack Blister', msrp: 13.99, packs: 3, current: 18, emoji: '💳' }
+                    'booster-bundle': { name: 'Booster Bundle', msrp: 27, packs: 6, current: 37.16, art: 'bundle' },
+                    'etb': { name: 'Elite Trainer Box', msrp: 50, packs: 9, current: 71.66, art: 'etb' },
+                    'blister-2': { name: '2-Pack Blister', msrp: 9.99, packs: 2, current: 12, art: 'blister' },
+                    'blister-3': { name: '3-Pack Blister', msrp: 13.99, packs: 3, current: 18, art: 'blister' }
                 }
             },
             'perfect-order': {
-                name: 'Perfect Order',
-                released: 'March 27, 2026',
-                emoji: '🔵',
+                name: 'Perfect Order', released: 'March 27, 2026', grad: 'g-perfect-order',
                 products: {
-                    'booster-bundle': { name: 'Booster Bundle', msrp: 27, packs: 6, current: 41.56, emoji: '📦' },
-                    'etb': { name: 'Elite Trainer Box', msrp: 50, packs: 9, current: 72.26, emoji: '🎁' },
-                    'blister-2': { name: '2-Pack Blister', msrp: 9.99, packs: 2, current: 15, emoji: '💳' },
-                    'blister-3': { name: '3-Pack Blister', msrp: 13.99, packs: 3, current: 20, emoji: '💳' },
-                    'booster-box': { name: 'Booster Box', msrp: 162, packs: 36, current: 172.34, emoji: '📮' }
+                    'booster-bundle': { name: 'Booster Bundle', msrp: 27, packs: 6, current: 41.56, art: 'bundle' },
+                    'etb': { name: 'Elite Trainer Box', msrp: 50, packs: 9, current: 72.26, art: 'etb' },
+                    'blister-2': { name: '2-Pack Blister', msrp: 9.99, packs: 2, current: 15, art: 'blister' },
+                    'blister-3': { name: '3-Pack Blister', msrp: 13.99, packs: 3, current: 20, art: 'blister' },
+                    'booster-box': { name: 'Booster Box', msrp: 162, packs: 36, current: 172.34, art: 'box' }
                 }
             }
         };
 
+        /* ---------- set emblems (custom SVG per set) ---------- */
+        function emblem(key) {
+            if (key === 'pitch-black') return `
+                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                    <circle cx="30" cy="30" r="24" fill="#0B0D12" stroke="#4A4F5E" stroke-width="2"/>
+                    <path d="M30 6a24 24 0 1 0 0 48A18 18 0 0 1 30 6Z" fill="#1A1E28"/>
+                    <circle cx="30" cy="30" r="24" stroke="#FFCB05" stroke-width="1.4" stroke-dasharray="3 6" opacity="0.65"/>
+                    <circle cx="22" cy="24" r="2.2" fill="#FFCB05" opacity="0.9"/>
+                </svg>`;
+            if (key === 'chaos-rising') return `
+                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                    <circle cx="30" cy="30" r="24" fill="#3A1076" stroke="#C79BFF" stroke-width="2"/>
+                    <path d="M32 12 20 32h8l-4 16 18-24h-9l6-12Z" fill="#FFCB05" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+                </svg>`;
+            return `
+                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                    <circle cx="30" cy="30" r="24" fill="#0B49C4" stroke="#9CC0FF" stroke-width="2"/>
+                    <path d="M30 13l14.7 8.5v17L30 47l-14.7-8.5v-17L30 13Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M30 22l8.4 4.85v9.7L30 41.4l-8.4-4.85v-9.7L30 22Z" fill="#FFCB05"/>
+                </svg>`;
+        }
+
+        /* ---------- product illustrations ---------- */
+        function productArt(kind, size) {
+            const s = size || 66;
+            if (kind === 'bundle') return `
+                <svg width="${s}" height="${s}" viewBox="0 0 66 66" fill="none">
+                    <rect x="9" y="20" width="20" height="40" rx="3" fill="#3B5BFF"/>
+                    <rect x="9" y="20" width="20" height="8" fill="#2C46D6"/>
+                    <path d="M9 27h20" stroke="#0B1020" stroke-width="1" stroke-dasharray="2 2" opacity="0.4"/>
+                    <rect x="24" y="14" width="20" height="46" rx="3" fill="#FFCB05"/>
+                    <rect x="24" y="14" width="20" height="9" fill="#E9B600"/>
+                    <path d="M24 22h20" stroke="#0B1020" stroke-width="1" stroke-dasharray="2 2" opacity="0.35"/>
+                    <circle cx="34" cy="40" r="6" fill="#fff"/><path d="M28 40h12" stroke="#0B1020" stroke-width="1.6"/>
+                    <circle cx="34" cy="40" r="2.2" fill="#0B1020"/>
+                    <rect x="39" y="24" width="18" height="36" rx="3" fill="#30D158"/>
+                    <rect x="39" y="24" width="18" height="8" fill="#25A847"/>
+                </svg>`;
+            if (kind === 'etb') return `
+                <svg width="${s}" height="${s}" viewBox="0 0 66 66" fill="none">
+                    <rect x="12" y="16" width="42" height="44" rx="5" fill="#3B5BFF"/>
+                    <rect x="12" y="16" width="42" height="13" rx="5" fill="#2C46D6"/>
+                    <rect x="12" y="25" width="42" height="4" fill="#1F35A8"/>
+                    <circle cx="33" cy="43" r="10.5" fill="#fff"/>
+                    <path d="M22.5 43h21" stroke="#0B1020" stroke-width="2.4"/>
+                    <circle cx="33" cy="43" r="3.6" fill="#fff" stroke="#0B1020" stroke-width="2.4"/>
+                    <path d="M20 22l4-4M46 22l-4-4" stroke="#FFCB05" stroke-width="2.4" stroke-linecap="round"/>
+                </svg>`;
+            if (kind === 'blister') return `
+                <svg width="${s}" height="${s}" viewBox="0 0 66 66" fill="none">
+                    <rect x="14" y="10" width="38" height="50" rx="4" fill="#EBEDF4"/>
+                    <circle cx="33" cy="16" r="3" fill="none" stroke="#B9BECC" stroke-width="2"/>
+                    <rect x="20" y="24" width="26" height="30" rx="3" fill="#FFCB05"/>
+                    <rect x="20" y="24" width="26" height="7" fill="#E9B600"/>
+                    <circle cx="33" cy="42" r="6.5" fill="#fff"/>
+                    <path d="M26.5 42h13" stroke="#0B1020" stroke-width="1.8"/>
+                    <circle cx="33" cy="42" r="2.4" fill="#0B1020"/>
+                </svg>`;
+            if (kind === 'box') return `
+                <svg width="${s}" height="${s}" viewBox="0 0 66 66" fill="none">
+                    <path d="M8 24l25-9 25 9v20l-25 9-25-9V24Z" fill="#3B5BFF"/>
+                    <path d="M8 24l25 9 25-9" stroke="#1F35A8" stroke-width="2" fill="none" stroke-linejoin="round"/>
+                    <path d="M33 33v21" stroke="#1F35A8" stroke-width="2"/>
+                    <path d="M8 24l25-9 25 9-25 9L8 24Z" fill="#5A76FF"/>
+                    <circle cx="33" cy="21.5" r="6" fill="#FFCB05"/>
+                    <path d="M27 21.5h12" stroke="#0B1020" stroke-width="1.6"/>
+                </svg>`;
+            return `
+                <svg width="${s}" height="${s}" viewBox="0 0 66 66" fill="none">
+                    <rect x="23" y="8" width="20" height="50" rx="3.5" fill="#FFCB05"/>
+                    <rect x="23" y="8" width="20" height="10" fill="#E9B600"/>
+                    <path d="M23 17h20" stroke="#0B1020" stroke-width="1" stroke-dasharray="2 2" opacity="0.4"/>
+                    <circle cx="33" cy="36" r="7" fill="#fff"/>
+                    <path d="M26 36h14" stroke="#0B1020" stroke-width="1.8"/>
+                    <circle cx="33" cy="36" r="2.6" fill="#0B1020"/>
+                </svg>`;
+        }
+
+        /* ---------- tab switching ---------- */
+        function switchTab(name, el) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + name).classList.add('active');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            if (name === 'sets') renderSetBrowser();
+            haptic();
+        }
+
+        /* ---------- SETS ---------- */
         let currentSet = null;
 
-        function switchTab(num) {
-            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
-            document.getElementById('tab' + num).classList.add('active');
-            event.target.classList.add('active');
-
-            if (num === 2 && !currentSet) {
-                renderSetBrowser();
-            }
-        }
-
         function renderSetBrowser() {
-            if (!currentSet) {
-                let html = '<div class="set-grid">';
-
+            const wrap = document.getElementById('setView');
+            let html = '';
+            for (const key in setData) {
+                const s = setData[key];
+                const n = Object.keys(s.products).length;
                 html += `
-                    <div class="set-card pitch-black" onclick="selectSet('pitch-black')">
-                        <div class="set-header">
-                            <span class="set-emoji">⚫</span>
-                            <span>Pitch Black</span>
+                    <div class="set-card ${s.grad}" onclick="selectSet('${key}')">
+                        <span class="glow"></span>
+                        <div class="set-emblem">${emblem(key)}</div>
+                        <div class="set-meta">
+                            <div class="set-name">${s.name}</div>
+                            <div class="set-date">${s.released}</div>
+                            <div class="set-count">${n} products</div>
                         </div>
-                        <div class="set-info">Released July 17, 2026</div>
-                    </div>
-                `;
-
-                html += `
-                    <div class="set-card chaos-rising" onclick="selectSet('chaos-rising')">
-                        <div class="set-header">
-                            <span class="set-emoji">💜</span>
-                            <span>Chaos Rising</span>
-                        </div>
-                        <div class="set-info">Released May 22, 2026</div>
-                    </div>
-                `;
-
-                html += `
-                    <div class="set-card perfect-order" onclick="selectSet('perfect-order')">
-                        <div class="set-header">
-                            <span class="set-emoji">🔵</span>
-                            <span>Perfect Order</span>
-                        </div>
-                        <div class="set-info">Released March 27, 2026</div>
-                    </div>
-                `;
-
-                html += '</div>';
-                document.getElementById('setView').innerHTML = html;
-                document.getElementById('productView').style.display = 'none';
-            } else {
-                renderProducts();
+                        <span class="chev-w"><svg width="10" height="17" viewBox="0 0 10 17" fill="none"><path d="M2 2l6 6.5L2 15" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    </div>`;
             }
+            wrap.innerHTML = html;
+            document.getElementById('productView').style.display = 'none';
+            wrap.style.display = 'grid';
+            document.getElementById('setsBack').style.display = 'none';
+            document.getElementById('setsLarge').textContent = 'Sets';
+            document.getElementById('setsSub').textContent = 'Three sets tracked.';
+            document.getElementById('setsNavTitle').textContent = 'Sets';
+            currentSet = null;
         }
 
-        function selectSet(setName) {
-            currentSet = setName;
-            const set = setData[setName];
-            let html = `<button class="back-btn" onclick="backToSets()">← Back to Sets</button>`;
-            html += '<div class="product-grid">';
-
-            for (const [key, product] of Object.entries(set.products)) {
-                const costPerPack = (product.msrp / product.packs).toFixed(2);
+        function selectSet(key) {
+            currentSet = key;
+            const s = setData[key];
+            let html = '';
+            for (const pk in s.products) {
+                const p = s.products[pk];
+                const perPack = (p.msrp / p.packs).toFixed(2);
+                const over = p.current > p.msrp * 1.2;
                 html += `
-                    <div class="product-item" onclick="showProductDetails('${setName}', '${key}')">
-                        <div class="product-icon">${product.emoji}</div>
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-info">$${product.msrp} MSRP<br>${product.packs} packs • $${costPerPack}/pack</div>
-                    </div>
-                `;
+                    <div class="prod" onclick="openSheet('${key}','${pk}')">
+                        <div class="prod-art">${productArt(p.art)}</div>
+                        <div class="prod-name">${p.name}</div>
+                        <div class="prod-sub">$${p.msrp} &middot; $${perPack}/pack</div>
+                        <span class="prod-pill ${over ? 'hot' : ''}">Market $${p.current.toFixed(2)}</span>
+                    </div>`;
             }
-            html += '</div>';
             document.getElementById('productView').innerHTML = html;
             document.getElementById('setView').style.display = 'none';
-            document.getElementById('productView').style.display = 'block';
+            document.getElementById('productView').style.display = 'grid';
+            document.getElementById('setsBack').style.display = 'flex';
+            document.getElementById('setsLarge').textContent = s.name;
+            document.getElementById('setsSub').textContent = 'Released ' + s.released;
+            document.getElementById('setsNavTitle').textContent = s.name;
+            document.getElementById('screen-sets').querySelector('.scroll').scrollTop = 0;
+            haptic();
         }
 
-        function backToSets() {
-            currentSet = null;
-            renderSetBrowser();
+        function backToSets() { renderSetBrowser(); haptic(); }
+
+        /* ---------- detail sheet ---------- */
+        function openSheet(setKey, prodKey) {
+            const s = setData[setKey];
+            const p = s.products[prodKey];
+            const perPackMsrp = (p.msrp / p.packs).toFixed(2);
+            const markup = (((p.current - p.msrp) / p.msrp) * 100).toFixed(1);
+            const markCol = markup > 30 ? 'var(--red)' : (markup > 10 ? 'var(--orange)' : 'var(--green)');
+            document.getElementById('sheetContent').innerHTML = `
+                <div class="sheet-hero">
+                    <div class="sheet-art">${productArt(p.art, 52)}</div>
+                    <div>
+                        <div class="sheet-title">${p.name}</div>
+                        <div class="sheet-set">${s.name}</div>
+                    </div>
+                </div>
+                <div class="group" style="margin:0 0 4px">
+                    <div class="row"><span class="row-title">MSRP</span><span class="row-value mono-val">$${p.msrp.toFixed(2)}</span></div>
+                    <div class="row"><span class="row-title">Packs</span><span class="row-value mono-val">${p.packs}</span></div>
+                    <div class="row"><span class="row-title">Cost / pack</span><span class="row-value mono-val">$${perPackMsrp}</span></div>
+                    <div class="row"><span class="row-title">Market price</span><span class="row-value mono-val">$${p.current.toFixed(2)}</span></div>
+                    <div class="row"><span class="row-title">Markup</span><span class="row-value mono-val" style="color:${markCol}">${markup > 0 ? '+' : ''}${markup}%</span></div>
+                </div>`;
+            document.getElementById('sheetScrim').classList.add('open');
+            haptic();
         }
+        function closeSheet() { document.getElementById('sheetScrim').classList.remove('open'); }
 
-        function showProductDetails(setName, productKey) {
-            const set = setData[setName];
-            const product = set.products[productKey];
-            const costPerPackMsrp = (product.msrp / product.packs).toFixed(2);
-            const currentMarkup = (((product.current - product.msrp) / product.msrp) * 100).toFixed(1);
-
-            let html = `
-                <h2>${product.name}</h2>
-                <div class="detail-row">
-                    <span class="detail-label">Set</span>
-                    <span class="detail-value">${set.name}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">MSRP</span>
-                    <span class="detail-value">$${product.msrp.toFixed(2)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Packs Included</span>
-                    <span class="detail-value">${product.packs}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Cost Per Pack</span>
-                    <span class="detail-value">$${costPerPackMsrp}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Secondary Market</span>
-                    <span class="detail-value">$${product.current.toFixed(2)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Markup %</span>
-                    <span class="detail-value" style="color: ${currentMarkup > 30 ? '#f44336' : '#4caf50'};">${currentMarkup > 0 ? '+' : ''}${currentMarkup}%</span>
-                </div>
-            `;
-
-            document.getElementById('modalDetails').innerHTML = html;
-            document.getElementById('productModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('productModal').classList.remove('active');
-        }
-
-        document.getElementById('productModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
-
+        /* ---------- PRICE CHECK ---------- */
         function analyzePrice() {
             const setVal = document.getElementById('setSelect').value;
-            const productVal = document.getElementById('productType').value;
-            const priceVal = parseFloat(document.getElementById('priceFound').value);
+            const prodVal = document.getElementById('productType').value;
+            const price = parseFloat(document.getElementById('priceFound').value);
+            const out = document.getElementById('priceResult');
 
-            if (!setVal || !productVal || !priceVal) {
-                alert('Please fill in all fields');
+            if (!setVal || !prodVal || !price) {
+                out.innerHTML = `<div class="verdict"><div class="verdict-head v-wait"><div class="verdict-badge">!</div><div><div class="verdict-verb">Missing info</div><div class="verdict-note">Pick a set, product, and price.</div></div></div></div>`;
                 return;
             }
-
-            const set = setData[setVal];
-            const product = set.products[productVal];
-
-            if (!product) {
-                alert('Product not available for this set');
+            const p = setData[setVal].products[prodVal];
+            if (!p) {
+                out.innerHTML = `<div class="verdict"><div class="verdict-head v-skip"><div class="verdict-badge">✕</div><div><div class="verdict-verb">Not sold</div><div class="verdict-note">That product isn't in this set.</div></div></div></div>`;
                 return;
             }
+            const msrp = p.msrp;
+            const markup = (((price - msrp) / msrp) * 100).toFixed(1);
+            const perPack = (price / p.packs).toFixed(2);
+            const msrpPerPack = (msrp / p.packs).toFixed(2);
 
-            const msrp = product.msrp;
-            const markup = (((priceVal - msrp) / msrp) * 100).toFixed(1);
-            const costPerPack = (priceVal / product.packs).toFixed(2);
-            const msrpPerPack = (msrp / product.packs).toFixed(2);
+            let cls, verb, note, icon;
+            if (price <= msrp * 1.05) { cls = 'v-buy'; verb = 'Buy it'; note = 'Retail price or better.'; icon = '✓'; }
+            else if (price <= msrp * 1.20) { cls = 'v-consider'; verb = 'Consider'; note = 'A little over retail.'; icon = '≈'; }
+            else if (price <= msrp * 1.40) { cls = 'v-wait'; verb = 'Wait'; note = 'Track for a restock.'; icon = '◷'; }
+            else { cls = 'v-skip'; verb = 'Skip it'; note = 'Too far over retail.'; icon = '✕'; }
 
-            let score = '', scoreClass = '';
-
-            if (priceVal <= msrp * 1.05) {
-                score = '✅ BUY - Retail price!';
-                scoreClass = 'buy';
-            } else if (priceVal <= msrp * 1.20) {
-                score = '🟡 CONSIDER - Slightly above';
-                scoreClass = 'consider';
-            } else if (priceVal <= msrp * 1.40) {
-                score = '⏳ WAIT - Track for retail restock';
-                scoreClass = 'wait';
-            } else {
-                score = '❌ SKIP - Too expensive';
-                scoreClass = 'skip';
-            }
-
-            const result = `
-                <div class="result">
-                    <div style="margin-bottom: 8px;"><strong>${product.name}</strong></div>
-                    <div style="margin-bottom: 8px; font-size: 13px;">MSRP: $${msrp.toFixed(2)} | Your Price: $${priceVal.toFixed(2)}</div>
-                    <div style="margin-bottom: 12px; font-size: 13px;">Markup: <strong style="color: ${markup > 20 ? '#f44336' : '#4caf50'};">${markup > 0 ? '+' : ''}${markup}%</strong></div>
-                    <div style="font-size: 13px; margin-bottom: 12px;">Cost per pack: <strong>$${costPerPack}</strong> (MSRP: $${msrpPerPack})</div>
-                    <div class="score ${scoreClass}">${score}</div>
-                </div>
-            `;
-
-            document.getElementById('priceResult').innerHTML = result;
+            const markCol = markup > 20 ? 'var(--red)' : (markup > 5 ? 'var(--orange)' : 'var(--green)');
+            out.innerHTML = `
+                <div class="verdict">
+                    <div class="verdict-head ${cls}">
+                        <div class="verdict-badge">${icon}</div>
+                        <div><div class="verdict-verb">${verb}</div><div class="verdict-note">${note}</div></div>
+                    </div>
+                    <div class="verdict-body">
+                        <div class="vrow"><span class="k">${p.name}</span><span class="v">$${price.toFixed(2)}</span></div>
+                        <div class="vrow"><span class="k">MSRP</span><span class="v">$${msrp.toFixed(2)}</span></div>
+                        <div class="vrow"><span class="k">Markup</span><span class="v" style="color:${markCol}">${markup > 0 ? '+' : ''}${markup}%</span></div>
+                        <div class="vrow"><span class="k">Your cost / pack</span><span class="v">$${perPack} <span style="color:var(--label-2);font-weight:500">vs $${msrpPerPack}</span></span></div>
+                    </div>
+                </div>`;
+            haptic();
         }
 
+        /* ---------- GUIDE render ---------- */
+        function renderGuide() {
+            const msrp = [
+                ['Booster Bundle', '$27', '$4.50', 'bundle'],
+                ['Booster Box', '$162', '$4.50', 'box'],
+                ['Elite Trainer Box', '$50', '$5.56', 'etb'],
+                ['2-Pack Blister', '$9.99', '$5.00', 'blister'],
+                ['3-Pack Blister', '$13.99', '$4.66', 'blister']
+            ];
+            document.getElementById('msrpGroup').innerHTML = msrp.map(r => `
+                <div class="row">
+                    <div class="sheet-art" style="width:38px;height:38px;border-radius:10px">${productArt(r[3], 28)}</div>
+                    <div class="row-stack"><div class="row-title" style="font-size:16px">${r[0]}</div><div class="row-desc">${r[1]} MSRP</div></div>
+                    <span class="row-value mono-val">${r[2]}<span style="color:var(--label-2);font-weight:500;font-size:13px">/pk</span></span>
+                </div>`).join('');
+
+            const buy = [
+                ['b-green', '✓', 'Booster Bundles', 'Best value at $4.50 / pack'],
+                ['b-green', '✓', '3-Pack Blisters', 'Cheap per pack at $4.66'],
+                ['b-green', '✓', 'Booster Box at retail', 'Bulk value when at MSRP'],
+                ['b-red', '✕', 'Skip Tins', 'You pay for the tin, not the cards']
+            ];
+            document.getElementById('buyGroup').innerHTML = buy.map(r => `
+                <div class="row">
+                    <span class="badge-icon ${r[0]}">${r[1]}</span>
+                    <div class="row-stack"><div class="row-title" style="font-size:16px">${r[2]}</div><div class="row-desc">${r[3]}</div></div>
+                </div>`).join('');
+        }
+
+        /* ---------- nav scroll shadow ---------- */
+        document.querySelectorAll('.scroll').forEach(sc => {
+            const bar = sc.querySelector('.navbar');
+            sc.addEventListener('scroll', () => {
+                bar.classList.toggle('scrolled', sc.scrollTop > 8);
+            }, { passive: true });
+        });
+
+        /* ---------- haptic (works on supported devices) ---------- */
+        function haptic() { try { if (navigator.vibrate) navigator.vibrate(4); } catch (e) {} }
+
+        /* init */
         renderSetBrowser();
+        renderGuide();
     </script>
 </body>
 </html>
