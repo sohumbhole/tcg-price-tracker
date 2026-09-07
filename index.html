@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="TCG Tracker">
-    <meta name="theme-color" content="#0B1020">
+    <meta name="theme-color" content="#EDEFF5">
     <link rel="apple-touch-icon" href="icon.png">
     <title>Pokemon TCG Price Tracker</title>
     <style>
         :root {
+            color-scheme: light;
             --blue: #3B5BFF;
             --blue-press: #2C46D6;
             --gold: #FFCB05;
@@ -32,25 +33,6 @@
             --tab-bg: rgba(247, 248, 252, 0.86);
             --fill: rgba(118, 118, 128, 0.12);
             --shadow: 0 1px 2px rgba(11, 16, 32, 0.06), 0 8px 24px rgba(11, 16, 32, 0.06);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #000000;
-                --bg-elev: #0B0E17;
-                --card: #14181F;
-                --card-sub: #1C212B;
-                --label: #FFFFFF;
-                --label-2: rgba(235, 235, 245, 0.6);
-                --label-3: rgba(235, 235, 245, 0.3);
-                --separator: rgba(255, 255, 255, 0.1);
-                --nav-bg: rgba(16, 20, 28, 0.72);
-                --tab-bg: rgba(16, 20, 28, 0.8);
-                --fill: rgba(120, 120, 128, 0.24);
-                --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5);
-                --blue: #5A76FF;
-                --blue-press: #6E88FF;
-            }
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -75,10 +57,10 @@
             content: '';
             position: fixed;
             top: 0; left: 0; right: 0;
-            height: 55vh;
+            height: 40vh;
             background:
-                radial-gradient(60% 60% at 20% 0%, rgba(59, 91, 255, 0.20), transparent 70%),
-                radial-gradient(50% 50% at 90% 10%, rgba(255, 203, 5, 0.14), transparent 70%);
+                radial-gradient(60% 60% at 15% 0%, rgba(59, 91, 255, 0.12), transparent 68%),
+                radial-gradient(50% 50% at 95% 6%, rgba(255, 203, 5, 0.09), transparent 68%);
             pointer-events: none;
             z-index: 0;
         }
@@ -838,9 +820,21 @@
         /* ---------- haptic (works on supported devices) ---------- */
         function haptic() { try { if (navigator.vibrate) navigator.vibrate(4); } catch (e) {} }
 
-        /* lock body to the real visible height (reliable in standalone) */
-        function fitHeight() { document.body.style.height = window.innerHeight + 'px'; }
-        ['resize', 'orientationchange', 'pageshow', 'load'].forEach(e => window.addEventListener(e, fitHeight));
+        /* lock body to the real visible height; iOS standalone reports a
+           wrong innerHeight on first paint, so fire this repeatedly + on the
+           earliest signals until it settles. Math.max avoids shrinking when
+           the keyboard opens (innerHeight stays full, visualViewport drops). */
+        function fitHeight() {
+            var vv = window.visualViewport ? window.visualViewport.height : 0;
+            var h = Math.max(window.innerHeight || 0, vv);
+            if (h) document.body.style.height = h + 'px';
+        }
+        ['resize', 'orientationchange', 'pageshow', 'load'].forEach(function (e) { window.addEventListener(e, fitHeight); });
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', fitHeight);
+        window.addEventListener('scroll', fitHeight, { passive: true, once: true });
+        document.addEventListener('touchmove', fitHeight, { passive: true, once: true });
+        [0, 60, 150, 300, 600, 1200].forEach(function (t) { setTimeout(fitHeight, t); });
+        requestAnimationFrame(fitHeight);
         fitHeight();
 
         /* init */
