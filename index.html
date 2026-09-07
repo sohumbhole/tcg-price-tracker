@@ -55,7 +55,7 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        html { height: -webkit-fill-available; }
+        html { height: 100%; overflow-x: hidden; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -63,9 +63,9 @@
             color: var(--label);
             -webkit-font-smoothing: antialiased;
             overscroll-behavior-y: none;
-            min-height: 100vh;
+            overflow-x: hidden;
+            height: 100%;
             min-height: 100dvh;
-            min-height: -webkit-fill-available;
             display: flex;
             flex-direction: column;
         }
@@ -74,7 +74,7 @@
         body::before {
             content: '';
             position: fixed;
-            inset: -20% -20% auto -20%;
+            top: 0; left: 0; right: 0;
             height: 55vh;
             background:
                 radial-gradient(60% 60% at 20% 0%, rgba(59, 91, 255, 0.20), transparent 70%),
@@ -370,10 +370,8 @@
             z-index: 60;
             display: flex;
             padding-bottom: env(safe-area-inset-bottom);
-            background: var(--tab-bg);
-            -webkit-backdrop-filter: saturate(180%) blur(22px);
-            backdrop-filter: saturate(180%) blur(22px);
-            box-shadow: 0 -0.5px 0 var(--separator);
+            background: var(--bg-elev);
+            border-top: 0.5px solid var(--separator);
         }
         .tab {
             flex: 1;
@@ -839,6 +837,11 @@
 
         /* ---------- haptic (works on supported devices) ---------- */
         function haptic() { try { if (navigator.vibrate) navigator.vibrate(4); } catch (e) {} }
+
+        /* lock body to the real visible height (reliable in standalone) */
+        function fitHeight() { document.body.style.height = window.innerHeight + 'px'; }
+        ['resize', 'orientationchange', 'pageshow', 'load'].forEach(e => window.addEventListener(e, fitHeight));
+        fitHeight();
 
         /* init */
         renderSetBrowser();
